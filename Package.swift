@@ -23,6 +23,9 @@ let package = Package(
             dependencies: [
                 .target(name: "CubismFramework")
             ],
+            cSettings: [
+                .unsafeFlags(["-fno-objc-arc"])
+            ],
             cxxSettings: [
                 .headerSearchPath("src")
             ],
@@ -86,5 +89,6 @@ let package = Package(
             name: "CubismTests",
             dependencies: ["Cubism"]
         ),
-    ]
+    ],
+    cxxLanguageStandard: .cxx14
 )

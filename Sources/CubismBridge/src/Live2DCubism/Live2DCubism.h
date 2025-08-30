@@ -1,5 +1,5 @@
 //
-//  Bridge.h
+//  Live2DCubism.h
 //  Cubism
 //
 //  Created by Meng on 2025/8/26.
@@ -9,7 +9,14 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface Bridge : NSObject
+@interface Live2DCubism : NSObject
+
++ (Live2DCubism *)shared;
+
+/// 启动 SDK
+- (void)start;
+/// 停止 SDK
+- (void)stop;
 
 @end
 
