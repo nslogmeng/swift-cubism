@@ -9,15 +9,13 @@
 #import "Live2DCubismMotion.h"
 #import <Motion/ACubismMotion.hpp>
 
-using namespace Csm;
-
 NS_ASSUME_NONNULL_BEGIN
 
 @interface Live2DCubismMotion(Internal)
 
-@property (nonatomic, assign) ACubismMotion *motion;
+@property (nonatomic, assign) Csm::ACubismMotion *motion;
 
-- (instancetype)initWithName:(NSString *)name motion:(ACubismMotion *)motion;
+- (instancetype)initWithName:(NSString *)name motion:(Csm::ACubismMotion *)motion;
 
 @end
 

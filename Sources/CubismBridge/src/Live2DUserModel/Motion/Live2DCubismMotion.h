@@ -11,7 +11,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface Live2DCubismMotion : NSObject
 
+/// Motion 名称
 @property (nonatomic, copy, readonly) NSString *name;
+
+- (instancetype)init NS_UNAVAILABLE;
 
 @end
 

@@ -19,8 +19,8 @@
 #import <Physics/CubismPhysics.hpp>
 #import <Rendering/Metal/CubismRenderer_Metal.hpp>
 #import <Utils/CubismString.hpp>
-#import "../Live2DCubism/Platform/Config/PlatformConfig.h"
-#import "../Live2DCubism/Platform/Option/PlatformOption.h"
+#import "../Platform/PlatformConfig.h"
+#import "../Platform/PlatformOption.h"
 
 using namespace Live2D::Cubism::Framework;
 using namespace Live2D::Cubism::Framework::DefaultParameterId;

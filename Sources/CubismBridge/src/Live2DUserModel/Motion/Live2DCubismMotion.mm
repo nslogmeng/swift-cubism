@@ -9,8 +9,6 @@
 #import "Live2DCubismMotion+Internal.h"
 #import <Motion/ACubismMotion.hpp>
 
-using namespace Csm;
-
 @interface Live2DCubismMotion()
 
 @property (nonatomic, copy, readwrite) NSString *name;
@@ -19,7 +17,7 @@ using namespace Csm;
 
 @implementation Live2DCubismMotion
 
-- (instancetype)initWithName:(NSString *)name motion:(ACubismMotion *)motion {
+- (instancetype)initWithName:(NSString *)name motion:(Csm::ACubismMotion *)motion {
     self = [super init];
     if (self) {
         self.name = name;
@@ -29,7 +27,7 @@ using namespace Csm;
 }
 
 - (void)dealloc {
-    ACubismMotion::Delete(self.motion);
+    Csm::ACubismMotion::Delete(self.motion);
 }
 
 @end

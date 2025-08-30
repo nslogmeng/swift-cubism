@@ -13,7 +13,7 @@
 #import <sys/stat.h>
 #import <iostream>
 #import <fstream>
-#import "../Config/PlatformConfig.h"
+#import "PlatformConfig.h"
 
 using std::endl;
 using namespace Csm;

@@ -7,9 +7,9 @@
 
 #import "Live2DCubism.h"
 #import "CubismFramework.hpp"
-#import "Platform/Config/PlatformConfig.h"
-#import "Platform/Allocator/PlatformAllocator.h"
-#import "Platform/Option/PlatformOption.h"
+#import "Platform/PlatformConfig.h"
+#import "Platform/PlatformAllocator.h"
+#import "Platform/PlatformOption.h"
 #import <string.h>
 
 using namespace std;
