@@ -61,7 +61,6 @@ using namespace Live2D::Cubism::Framework;
 - (void)dealloc {
     Csm::CubismFramework::Dispose();
     Csm::CubismFramework::CleanUp();
-    [super dealloc];
 }
 
 @end

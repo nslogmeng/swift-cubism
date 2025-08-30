@@ -23,9 +23,6 @@ let package = Package(
             dependencies: [
                 .target(name: "CubismFramework")
             ],
-            cSettings: [
-                .unsafeFlags(["-fno-objc-arc"])
-            ],
             cxxSettings: [
                 .headerSearchPath("src")
             ],
