@@ -16,12 +16,12 @@ mkdir -p "$INCLUDE_DIR"
 
 echo "==> 生成头文件软链接到 include/"
 
-# 遍历 src 下所有 .h/.hpp 文件（支持空格和特殊字符）
-find "$SRC_DIR" -type f \( -name "*.h" -o -name "*.hpp" \) -print0 | while IFS= read -r -d '' file; do
+# 遍历 src 下所有 .h/.hpp/.tpp 文件（支持空格和特殊字符）
+find "$SRC_DIR" -type f \( -name "*.h" -o -name "*.hpp"  -o -name "*.tpp" \) -print0 | while IFS= read -r -d '' file; do
     rel_path="${file#$SRC_DIR/}"
 
     if [[ "$rel_path" == Rendering/* ]]; then
-        if [[ "$rel_path" =~ ^Rendering/[^/]+\.(h|hpp)$ || "$rel_path" =~ ^Rendering/$RENDER_TYPE/.*\.(h|hpp)$ ]]; then
+        if [[ "$rel_path" =~ ^Rendering/[^/]+\.(h|hpp|tpp)$ || "$rel_path" =~ ^Rendering/$RENDER_TYPE/.*\.(h|hpp)$ ]]; then
             : # 保留
         else
             continue

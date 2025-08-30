@@ -8,7 +8,7 @@
 #ifndef PlatformAllocator_hpp
 #define PlatformAllocator_hpp
 
-#import "CubismFramework.hpp"
+#import <CubismFramework.hpp>
 
 /**
  * @brief 平台相关注入接口，实现内存分配。

@@ -325,7 +325,7 @@ void UserModel::Update() {
     if (_motionManager->IsFinished()) {
         // 若没有动作播放，则从待机动作中随机播放一个
         // TODO
-        StartRandomMotion([CubismModelConfig.motionGroupIdle cStringUsingEncoding:NSUTF8StringEncoding], (signed int)CubismModelConfig.priorityIdle);
+//        StartRandomMotion([CubismModelConfig.motionGroupIdle cStringUsingEncoding:NSUTF8StringEncoding], (signed int)CubismModelConfig.priorityIdle);
     } else {
         motionUpdated = _motionManager->UpdateMotion(_model, deltaTimeSeconds); // 更新动作
     }

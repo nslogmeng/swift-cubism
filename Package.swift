@@ -67,6 +67,7 @@ let package = Package(
                 "src/Rendering/OpenGL",
                 "src/Rendering/Vulkan",
             ],
+            publicHeadersPath: "include",
             cSettings: [
                 .unsafeFlags(["-fno-objc-arc"])
             ],
