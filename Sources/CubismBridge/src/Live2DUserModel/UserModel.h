@@ -70,7 +70,10 @@ public:
      * @param[in]   onBeganMotionHandler        动作播放开始时回调。为NULL时不调用。
      * @return                                  返回开始的动作标识号。用于判断单个动作是否结束。无法开始时返回“-1”
      */
-    Csm::CubismMotionQueueEntryHandle StartRandomMotion(const Csm::csmChar* group, Csm::csmInt32 priority, Csm::ACubismMotion::FinishedMotionCallback onFinishedMotionHandler = NULL, Csm::ACubismMotion::BeganMotionCallback onBeganMotionHandler = NULL);
+    Csm::CubismMotionQueueEntryHandle StartRandomMotion(const Csm::csmChar* group,
+                                                        Csm::csmInt32 priority,
+                                                        Csm::ACubismMotion::FinishedMotionCallback onFinishedMotionHandler = NULL,
+                                                        Csm::ACubismMotion::BeganMotionCallback onBeganMotionHandler = NULL);
 
     /**
      * @brief   设置指定参数的表情动作

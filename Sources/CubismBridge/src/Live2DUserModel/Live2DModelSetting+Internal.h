@@ -13,7 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface Live2DModelSetting(Internal)
 
-@property (nonatomic, assign, readonly) Csm::ICubismModelSetting *setting;
+@property (nonatomic, assign, readonly) Csm::ICubismModelSetting *modelSetting;
 
 @end
 

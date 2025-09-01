@@ -19,8 +19,8 @@
 #import <Physics/CubismPhysics.hpp>
 #import <Rendering/Metal/CubismRenderer_Metal.hpp>
 #import <Utils/CubismString.hpp>
-#import "../Platform/PlatformConfig.h"
-#import "../Platform/PlatformOption.h"
+#import "Platform/PlatformConfig.h"
+#import "Platform/PlatformOption.h"
 
 using namespace Live2D::Cubism::Framework;
 using namespace Live2D::Cubism::Framework::DefaultParameterId;
@@ -69,8 +69,7 @@ UserModel::~UserModel() {
 
     for (csmInt32 modelTextureNumber = 0; modelTextureNumber < _modelSetting->GetTextureCount(); modelTextureNumber++) {
         // 若纹理名为空字符串，则跳过删除处理
-        if (!strcmp(_modelSetting->GetTextureFileName(modelTextureNumber), ""))
-        {
+        if (!strcmp(_modelSetting->GetTextureFileName(modelTextureNumber), "")) {
             continue;
         }
 
@@ -144,8 +143,7 @@ void UserModel::SetupModel(ICubismModelSetting* setting) {
             buffer = CreateBuffer(path.GetRawString(), &size);
             ACubismMotion* motion = LoadExpression(buffer, size, name.GetRawString());
 
-            if (motion)
-            {
+            if (motion) {
                 if (_expressions[name] != NULL)
                 {
                     ACubismMotion::Delete(_expressions[name]);
@@ -210,8 +208,7 @@ void UserModel::SetupModel(ICubismModelSetting* setting) {
     // EyeBlinkIds
     {
         csmInt32 eyeBlinkIdCount = _modelSetting->GetEyeBlinkParameterCount();
-        for (csmInt32 i = 0; i < eyeBlinkIdCount; ++i)
-        {
+        for (csmInt32 i = 0; i < eyeBlinkIdCount; ++i) {
             _eyeBlinkIds.PushBack(_modelSetting->GetEyeBlinkParameterId(i));
         }
     }
@@ -219,8 +216,7 @@ void UserModel::SetupModel(ICubismModelSetting* setting) {
     // LipSyncIds
     {
         csmInt32 lipSyncIdCount = _modelSetting->GetLipSyncParameterCount();
-        for (csmInt32 i = 0; i < lipSyncIdCount; ++i)
-        {
+        for (csmInt32 i = 0; i < lipSyncIdCount; ++i) {
             _lipSyncIds.PushBack(_modelSetting->GetLipSyncParameterId(i));
         }
     }
@@ -269,8 +265,7 @@ void UserModel::PreloadMotionGroup(const csmChar* group) {
         if (tmpMotion) {
             tmpMotion->SetEffectIds(_eyeBlinkIds, _lipSyncIds);
 
-            if (_motions[name] != NULL)
-            {
+            if (_motions[name] != NULL) {
                 ACubismMotion::Delete(_motions[name]);
             }
             _motions[name] = tmpMotion;
@@ -374,8 +369,7 @@ void UserModel::Update() {
     if (_lipSync) {
         csmFloat32 value = 0; // 若实时唇形同步，从系统获取音量并输入0~1范围的值
 
-        for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i)
-        {
+        for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i) {
             _model->AddParameterValue(_lipSyncIds[i], value, 0.8f);
         }
     }
@@ -471,13 +465,11 @@ void UserModel::Draw(CubismMatrix44& matrix) {
 
 csmBool UserModel::HitTest(const csmChar* hitAreaName, csmFloat32 x, csmFloat32 y) {
     // 若透明则无判定
-    if (_opacity < 1)
-    {
+    if (_opacity < 1) {
         return false;
     }
     const csmInt32 count = _modelSetting->GetHitAreasCount();
-    for (csmInt32 i = 0; i < count; i++)
-    {
+    for (csmInt32 i = 0; i < count; i++) {
         if (strcmp(_modelSetting->GetHitAreaName(i), hitAreaName) == 0)
         {
             const CubismIdHandle drawID = _modelSetting->GetHitAreaId(i);
