@@ -27,7 +27,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
 @interface Live2DUserModel(Internal)
 
-@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *model;
+@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *userModel;
 
 /// 模型根目录
 @property (nonatomic, copy) NSString *modelHomeDir;

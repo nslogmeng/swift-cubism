@@ -35,7 +35,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 @property (nonatomic, readwrite) CGFloat opacity;
 @property (nonatomic, readwrite) void *modelMatrix;
 
-@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *model;
+@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *userModel;
 
 /// 累计的时间差值[秒]
 @property (nonatomic) CGFloat userTimeSeconds;
@@ -93,7 +93,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         _internalOpacity = 1.0f;
 
         // 创建 UserModel 实例
-        _model = new Live2D::Cubism::Live2DCubismUserModel();
+        _userModel = new Live2D::Cubism::Live2DCubismUserModel();
 
         // 初始化参数ID
         _angleX = CubismFramework::GetIdManager()->GetId(ParamAngleX);
@@ -142,16 +142,16 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     _renderBuffer.DestroyOffscreenSurface();
 
     // 释放 UserModel
-    if (_model) {
-        delete _model;
-        _model = nullptr;
+    if (_userModel) {
+        delete _userModel;
+        _userModel = nullptr;
     }
 }
 
 #pragma mark - Model Loading
 
 - (void)loadAssetsWithError:(NSError **)error {
-    if (_model == nullptr) {
+    if (_userModel == nullptr) {
         if (error) {
             *error = [NSError errorWithDomain:@"Live2DCubism" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"UserModel is not initialized"}];
         }
@@ -165,19 +165,19 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     }
 
     // 创建渲染器
-    _model->CreateRenderer();
+    _userModel->CreateRenderer();
 
     // 设置纹理
     [self setupTextures];
 }
 
 - (void)setupModelWithError:(NSError **)error {
-    if (_model == nullptr || self.setting.modelSetting == nullptr) {
+    if (_userModel == nullptr || self.setting.modelSetting == nullptr) {
         return;
     }
 
-    _model->SetUpdating(true);
-    _model->SetInitialized(false);
+    _userModel->SetUpdating(true);
+    _userModel->SetInitialized(false);
 
     csmByte* buffer;
     csmSizeInt size;
@@ -188,7 +188,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         path = csmString(_setting.homeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _model->LoadModel(buffer, size);
+        _userModel->LoadModel(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -201,7 +201,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
             path = csmString(_setting.homeDir.UTF8String) + path;
 
             buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-            ACubismMotion* motion = _model->LoadExpression(buffer, size, name.GetRawString());
+            ACubismMotion* motion = _userModel->LoadExpression(buffer, size, name.GetRawString());
 
             if (motion) {
                 if (_expressions[name] != NULL) {
@@ -221,7 +221,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         path = csmString(_setting.homeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _model->LoadPhysics(buffer, size);
+        _userModel->LoadPhysics(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -231,7 +231,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         path = csmString(_setting.homeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _model->LoadPose(buffer, size);
+        _userModel->LoadPose(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -243,7 +243,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
     // 呼吸
     {
-        _model->SetBreath(CubismBreath::Create());
+        _userModel->SetBreath(CubismBreath::Create());
 
         csmVector<CubismBreath::BreathParameterData> breathParameters;
 
@@ -253,7 +253,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         breathParameters.PushBack(CubismBreath::BreathParameterData(_bodyAngleX, 0.0f, 4.0f, 15.5345f, 0.5f));
         breathParameters.PushBack(CubismBreath::BreathParameterData(CubismFramework::GetIdManager()->GetId(ParamBreath), 0.5f, 0.5f, 3.2345f, 0.5f));
 
-        _model->GetBreath()->SetParameters(breathParameters);
+        _userModel->GetBreath()->SetParameters(breathParameters);
     }
 
     // 用户数据
@@ -261,7 +261,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         csmString path = self.setting.modelSetting->GetUserDataFile();
         path = csmString(_setting.homeDir.UTF8String) + path;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _model->LoadUserData(buffer, size);
+        _userModel->LoadUserData(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -284,9 +284,9 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     // 布局
     csmMap<csmString, csmFloat32> layout;
     self.setting.modelSetting->GetLayoutMap(layout);
-    _model->GetModelMatrix()->SetupFromLayout(layout);
+    _userModel->GetModelMatrix()->SetupFromLayout(layout);
 
-    _model->GetModel()->SaveParameters();
+    _userModel->GetModel()->SaveParameters();
 
     // 预加载动作
     for (csmInt32 i = 0; i < self.setting.modelSetting->GetMotionGroupCount(); i++) {
@@ -294,16 +294,16 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         [self preloadMotionGroup:group];
     }
 
-    _model->GetMotionManager()->StopAllMotions();
+    _userModel->GetMotionManager()->StopAllMotions();
 
-    _model->SetUpdating(false);
-    _model->SetInitialized(true);
+    _userModel->SetUpdating(false);
+    _userModel->SetInitialized(true);
 }
 
 #pragma mark - Texture Management
 
 - (void)setupTextures {
-    auto renderer = _model->GetRenderer<Rendering::CubismRenderer_Metal>();
+    auto renderer = _userModel->GetRenderer<Rendering::CubismRenderer_Metal>();
     if (!renderer) {
         return;
     }
@@ -353,7 +353,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         csmByte* buffer;
         csmSizeInt size;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        CubismMotion* tmpMotion = static_cast<CubismMotion*>(_model->LoadMotion(buffer, size, name.GetRawString(), NULL, NULL, self.setting.modelSetting, group, i));
+        CubismMotion* tmpMotion = static_cast<CubismMotion*>(_userModel->LoadMotion(buffer, size, name.GetRawString(), NULL, NULL, self.setting.modelSetting, group, i));
 
         if (tmpMotion) {
             tmpMotion->SetEffectIds(_eyeBlinkIds, _lipSyncIds);
@@ -397,27 +397,27 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 #pragma mark - Public Interface
 
 - (void)reloadRenderer {
-    if (_model) {
-        _model->DeleteRenderer();
-        _model->CreateRenderer();
+    if (_userModel) {
+        _userModel->DeleteRenderer();
+        _userModel->CreateRenderer();
         [self setupTextures];
     }
 }
 
 - (void)update {
-    if (_model == nullptr) {
+    if (_userModel == nullptr) {
         return;
     }
 
-    CubismModel *model = _model->GetModel();
-    CubismMotionManager *motionManager = _model->GetMotionManager();
+    CubismModel *model = _userModel->GetModel();
+    CubismMotionManager *motionManager = _userModel->GetMotionManager();
 
     const csmFloat32 deltaTimeSeconds = 0.016f; // 假设60FPS
     _userTimeSeconds += deltaTimeSeconds;
 
-    _model->GetDragManager()->Update(deltaTimeSeconds);
-    _model->SetDragX(_internalDragX);
-    _model->SetDragY(_internalDragY);
+    _userModel->GetDragManager()->Update(deltaTimeSeconds);
+    _userModel->SetDragX(_internalDragX);
+    _userModel->SetDragY(_internalDragY);
 
     // 通过动作更新参数的有无
     csmBool motionUpdated = false;
@@ -438,14 +438,14 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
     // 眨眼
     if (!motionUpdated) {
-        if (_model->GetEyeBlink() != NULL) {
+        if (_userModel->GetEyeBlink() != NULL) {
             // 主动作未更新时
-            _model->GetEyeBlink()->UpdateParameters(model, deltaTimeSeconds); // 眨眼
+            _userModel->GetEyeBlink()->UpdateParameters(model, deltaTimeSeconds); // 眨眼
         }
     }
 
-    if (_model->GetExpressionManager() != NULL) {
-        _model->GetExpressionManager()->UpdateMotion(model, deltaTimeSeconds); // 通过表情更新参数（相对变化）
+    if (_userModel->GetExpressionManager() != NULL) {
+        _userModel->GetExpressionManager()->UpdateMotion(model, deltaTimeSeconds); // 通过表情更新参数（相对变化）
     }
 
     // 拖拽变化
@@ -462,17 +462,17 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     model->AddParameterValue(_eyeBallY, _internalDragY);
 
     // 呼吸等
-    if (_model->GetBreath() != NULL) {
-        _model->GetBreath()->UpdateParameters(model, deltaTimeSeconds);
+    if (_userModel->GetBreath() != NULL) {
+        _userModel->GetBreath()->UpdateParameters(model, deltaTimeSeconds);
     }
 
     // 物理运算设置
-    if (_model->GetPhysics() != NULL) {
-        _model->GetPhysics()->Evaluate(model, deltaTimeSeconds);
+    if (_userModel->GetPhysics() != NULL) {
+        _userModel->GetPhysics()->Evaluate(model, deltaTimeSeconds);
     }
 
     // 唇形同步设置
-    if (_model->GetLipSync()) {
+    if (_userModel->GetLipSync()) {
         csmFloat32 value = 0; // 若实时唇形同步，从系统获取音量并输入0~1范围的值
 
         for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i) {
@@ -481,15 +481,15 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     }
 
     // 姿势设置
-    if (_model->GetPose() != NULL) {
-        _model->GetPose()->UpdateParameters(model, deltaTimeSeconds);
+    if (_userModel->GetPose() != NULL) {
+        _userModel->GetPose()->UpdateParameters(model, deltaTimeSeconds);
     }
 
     model->Update();
 }
 
 - (void)drawWithMatrix:(float[16])matrix {
-    if (_model == nullptr) {
+    if (_userModel == nullptr) {
         return;
     }
 
@@ -497,9 +497,9 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     cubismMatrix.SetMatrix(matrix);
 
     // TODO: check
-    cubismMatrix.MultiplyByMatrix(_model->GetModelMatrix());
+    cubismMatrix.MultiplyByMatrix(_userModel->GetModelMatrix());
 
-    auto renderer = _model->GetRenderer<Rendering::CubismRenderer_Metal>();
+    auto renderer = _userModel->GetRenderer<Rendering::CubismRenderer_Metal>();
     if (renderer) {
         renderer->SetMvpMatrix(&cubismMatrix);
         renderer->DrawModel();
@@ -511,13 +511,13 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
                          priority:(NSInteger)priority
                   finishedHandler:(Live2DCubismMotionFinishedCallback)finishedHandler
                      beganHandler:(Live2DCubismMotionBeganCallback)beganHandler {
-    if (_model == nullptr) {
+    if (_userModel == nullptr) {
         return -1;
     }
 
     if (priority == 1) {
-        _model->GetMotionManager()->SetReservePriority((csmInt32)priority);
-    } else if (!_model->GetMotionManager()->ReserveMotion((csmInt32)priority)) {
+        _userModel->GetMotionManager()->SetReservePriority((csmInt32)priority);
+    } else if (!_userModel->GetMotionManager()->ReserveMotion((csmInt32)priority)) {
         return -1;
     }
 
@@ -535,7 +535,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         csmByte* buffer;
         csmSizeInt size;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        motion = static_cast<CubismMotion*>(_model->LoadMotion(buffer, size, NULL, NULL, NULL, self.setting.modelSetting, [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index));
+        motion = static_cast<CubismMotion*>(_userModel->LoadMotion(buffer, size, NULL, NULL, NULL, self.setting.modelSetting, [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index));
 
         if (motion) {
             motion->SetEffectIds(_eyeBlinkIds, _lipSyncIds);
@@ -555,7 +555,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
     // TODO: 处理声音文件
 
-    return (NSInteger)_model->GetMotionManager()->StartMotionPriority(motion, autoDelete, (csmInt32)priority);
+    return (NSInteger)_userModel->GetMotionManager()->StartMotionPriority(motion, autoDelete, (csmInt32)priority);
 }
 
 - (NSInteger)startRandomMotionWithGroup:(NSString *)group
@@ -574,7 +574,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 - (void)setExpression:(NSString *)expressionID {
     ACubismMotion* motion = _expressions[[expressionID cStringUsingEncoding:NSUTF8StringEncoding]];
     if (motion != NULL) {
-        _model->GetExpressionManager()->StartMotion(motion, false);
+        _userModel->GetExpressionManager()->StartMotion(motion, false);
     }
 }
 
@@ -605,7 +605,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     for (csmInt32 i = 0; i < count; i++) {
         if (strcmp(self.setting.modelSetting->GetHitAreaName(i), [hitAreaName cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
             const CubismIdHandle drawID = self.setting.modelSetting->GetHitAreaId(i);
-            return _model->IsHit(drawID, (csmFloat32)x, (csmFloat32)y);
+            return _userModel->IsHit(drawID, (csmFloat32)x, (csmFloat32)y);
         }
     }
     return false; // 若不存在则返回false
@@ -654,7 +654,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 }
 
 - (void *)modelMatrix {
-    return _model ? _model->GetModelMatrix() : nullptr;
+    return _userModel ? _userModel->GetModelMatrix() : nullptr;
 }
 
 @end
