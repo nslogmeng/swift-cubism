@@ -85,6 +85,14 @@ public:
     // get with super `GetOpacity()`
     // set with super `SetOpacity(a)`
 
+    // property: dragX
+    csmFloat32 GetDragX() const { return _dragX; }
+    void SetDragX(csmFloat32 x) { _dragX = x; }
+
+    // property: dragY
+    csmFloat32 GetDragY() const { return _dragY; }
+    void SetDragY(csmFloat32 y) { _dragY = y; }
+
     // property: accelerationX/accelerationY/accelerationZ
     // set with super `SetAcceleration(x, y, z)`
 
