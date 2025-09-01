@@ -17,7 +17,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, copy, readonly) NSString *fileName;
 
 - (instancetype)init NS_UNAVAILABLE;
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir fileName:(NSString *)fileName error:(NSError **)error NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
+                                fileName:(NSString *)fileName
+                                   error:(NSError **)error NS_DESIGNATED_INITIALIZER;
 
 @end
 

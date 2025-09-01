@@ -7,7 +7,6 @@
 
 #import <Foundation/Foundation.h>
 #import "Live2DModelSetting.h"
-#import "Motion/Live2DCubismMotion.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -19,11 +18,6 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 @interface Live2DUserModel : NSObject
 
 @property (nonatomic, readonly) Live2DModelSetting *setting;
-
-/// 动作列表
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, Live2DCubismMotion *> *motions;
-/// 表情列表
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, Live2DCubismMotion *> *expressions;
 
 /// 模型不透明度
 @property (nonatomic, readonly) CGFloat opacity;

@@ -7,7 +7,6 @@
 
 #import <Foundation/Foundation.h>
 #import "Live2DModelSetting.h"
-#import "Motion/Live2DCubismMotion.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -19,11 +18,6 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 @interface Live2DUserModel : NSObject
 
 @property (nonatomic, readonly) Live2DModelSetting *setting;
-
-/// 动作列表
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, Live2DCubismMotion *> *motions;
-/// 表情列表
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, Live2DCubismMotion *> *expressions;
 
 /// 模型不透明度
 @property (nonatomic, readonly) CGFloat opacity;
@@ -37,7 +31,9 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 @property (nonatomic, readonly) void *modelMatrix;
 
 - (instancetype)init NS_UNAVAILABLE;
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir fileName:(NSString *)fileName error:(NSError **)error NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
+                                fileName:(NSString *)fileName
+                                   error:(NSError **)error NS_DESIGNATED_INITIALIZER;
 
 /// 重新构建渲染器
 - (void)reloadRenderer;
@@ -47,7 +43,8 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 
 /// 绘制模型。传递模型绘制空间的 View-Projection 矩阵
 /// @param matrix View-Projection矩阵 (4x4 浮点数组)
-- (void)drawWithMatrix:(float[16])matrix;
+// TODO:
+//- (void)drawWithMatrix:(float[16])matrix;
 
 /// 开始播放指定参数的动作
 /// @param group 动作组名
@@ -86,9 +83,6 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 /// @param y 要判定的Y坐标
 /// @return 是否碰撞
 - (BOOL)hitTestWithHitAreaName:(NSString *)hitAreaName x:(CGFloat)x y:(CGFloat)y;
-
-/// 获取用于绘制到其他目标的缓冲区
-- (void *)renderBuffer;
 
 /// 检查 .moc3 文件的完整性
 /// @param mocFileName MOC3文件名

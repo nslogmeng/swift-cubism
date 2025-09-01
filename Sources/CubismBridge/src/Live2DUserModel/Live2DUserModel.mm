@@ -5,33 +5,77 @@
 //  Created by Meng on 2025/8/30.
 //
 
-#import "Live2DUserModel.h"
-#import "Live2DUserModel+Internal.h"
-#import "Live2DModelSetting.h"
 #import "Live2DModelSetting+Internal.h"
+#import "Live2DModelSetting.h"
+#import "Live2DUserModel+Internal.h"
+#import "Live2DUserModel.h"
+#import "Motion/Live2DCubismMotion+Internal.h"
+#import "Motion/Live2DCubismMotion.h"
 #import "Platform/PlatformConfig.h"
 #import "Platform/PlatformOption.h"
-#import "Motion/Live2DCubismMotion.h"
-#import "Motion/Live2DCubismMotion+Internal.h"
-#import <Id/CubismIdManager.hpp>
 #import <CubismDefaultParameterId.hpp>
 #import <CubismModelSettingJson.hpp>
-#import <Type/csmString.hpp>
-#import <Utils/CubismString.hpp>
+#import <Effect/CubismBreath.hpp>
+#import <Effect/CubismEyeBlink.hpp>
+#import <Effect/CubismPose.hpp>
+#import <Id/CubismIdManager.hpp>
 #import <Motion/CubismMotion.hpp>
 #import <Motion/CubismMotionQueueEntry.hpp>
-#import <Effect/CubismEyeBlink.hpp>
-#import <Effect/CubismBreath.hpp>
-#import <Effect/CubismPose.hpp>
 #import <Physics/CubismPhysics.hpp>
 #import <Rendering/Metal/CubismRenderer_Metal.hpp>
+#import <Type/csmString.hpp>
+#import <Utils/CubismString.hpp>
+
+using namespace Live2D::Cubism::Framework;
+using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
 @interface Live2DUserModel()
 
-@property (nonatomic, copy, readwrite) NSDictionary<NSString *, Live2DCubismMotion *> *motions;
-@property (nonatomic, copy, readwrite) NSDictionary<NSString *, Live2DCubismMotion *> *expressions;
 @property (nonatomic, readwrite) CGFloat opacity;
 @property (nonatomic, readwrite) void *modelMatrix;
+
+@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *model;
+
+/// 模型根目录
+@property (nonatomic, copy) NSString *modelHomeDir;
+/// 累计的时间差值[秒]
+@property (nonatomic) CGFloat userTimeSeconds;
+
+/// 眨眼参数
+@property (nonatomic, assign) Csm::csmVector<Csm::CubismIdHandle> eyeBlinkIds;
+/// 口型同步参数
+@property (nonatomic, assign) Csm::csmVector<Csm::CubismIdHandle> lipSyncIds;
+
+/// 碰撞区域
+@property (nonatomic, assign) Csm::csmVector<Csm::csmRectF> hitArea;
+/// 用户区域
+@property (nonatomic, assign) Csm::csmVector<Csm::csmRectF> userArea;
+
+/// 参数ID
+@property (nonatomic, assign) const Csm::CubismId *angleX;
+@property (nonatomic, assign) const Csm::CubismId *angleY;
+@property (nonatomic, assign) const Csm::CubismId *angleZ;
+@property (nonatomic, assign) const Csm::CubismId *bodyAngleX;
+@property (nonatomic, assign) const Csm::CubismId *eyeBallX;
+@property (nonatomic, assign) const Csm::CubismId *eyeBallY;
+
+/// 渲染缓冲区
+@property (nonatomic, assign) Rendering::CubismOffscreenSurface_Metal renderBuffer;
+
+/// 内部动作列表 (C++ map)
+@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> motions;
+/// 内部表情列表 (C++ map)
+@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> expressions;
+
+/// 拖拽位置 (内部使用)
+@property (nonatomic) CGFloat internalDragX;
+@property (nonatomic) CGFloat internalDragY;
+
+/// 模型不透明度 (内部使用)
+@property (nonatomic) CGFloat internalOpacity;
+
+/// 纹理管理器 (平台相关，需要外部注入)
+@property (nonatomic, weak, nullable) id textureManager;
 
 @end
 
@@ -39,28 +83,30 @@
 
 #pragma mark - Initialization
 
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir fileName:(NSString *)fileName error:(NSError **)error {
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
+                                fileName:(NSString *)fileName
+                                   error:(NSError **)error {
     self = [super init];
     if (self) {
         _modelHomeDir = [homeDir copy];
-        _userTimeSeconds = 0.0f;
-        _internalDragX = 0.0f;
-        _internalDragY = 0.0f;
-        _internalOpacity = 1.0f;
-
-        // 创建 UserModel 实例
-        _userModel = new CubismUserModel();
-
-        // 初始化参数ID
-        _angleX = CubismFramework::GetIdManager()->GetId(ParamAngleX);
-        _angleY = CubismFramework::GetIdManager()->GetId(ParamAngleY);
-        _angleZ = CubismFramework::GetIdManager()->GetId(ParamAngleZ);
-        _bodyAngleX = CubismFramework::GetIdManager()->GetId(ParamBodyAngleX);
-        _eyeBallX = CubismFramework::GetIdManager()->GetId(ParamEyeBallX);
-        _eyeBallY = CubismFramework::GetIdManager()->GetId(ParamEyeBallY);
+//        _userTimeSeconds = 0.0f;
+//        _internalDragX = 0.0f;
+//        _internalDragY = 0.0f;
+//        _internalOpacity = 1.0f;
+//
+//        // 创建 UserModel 实例
+//        _model = new Live2D::Cubism::Live2DCubismUserModel();
+//
+//        // 初始化参数ID
+//        _angleX = CubismFramework::GetIdManager()->GetId(ParamAngleX);
+//        _angleY = CubismFramework::GetIdManager()->GetId(ParamAngleY);
+//        _angleZ = CubismFramework::GetIdManager()->GetId(ParamAngleZ);
+//        _bodyAngleX = CubismFramework::GetIdManager()->GetId(ParamBodyAngleX);
+//        _eyeBallX = CubismFramework::GetIdManager()->GetId(ParamEyeBallX);
+//        _eyeBallY = CubismFramework::GetIdManager()->GetId(ParamEyeBallY);
 
         // 初始化设置
-        self.setting = [[Live2DModelSetting alloc] initWithHomeDir:homeDir fileName:fileName error:error];
+        _setting = [[Live2DModelSetting alloc] initWithHomeDir:homeDir fileName:fileName error:error];
         if ((error && *error) || !_setting) {
             [self cleanup];
             return nil;
@@ -98,16 +144,16 @@
     _renderBuffer.DestroyOffscreenSurface();
 
     // 释放 UserModel
-    if (_userModel) {
-        delete _userModel;
-        _userModel = nullptr;
+    if (_model) {
+        delete _model;
+        _model = nullptr;
     }
 }
 
 #pragma mark - Model Loading
 
 - (void)loadAssetsWithError:(NSError **)error {
-    if (_userModel == nullptr) {
+    if (_model == nullptr) {
         if (error) {
             *error = [NSError errorWithDomain:@"Live2DCubism" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"UserModel is not initialized"}];
         }
@@ -121,31 +167,30 @@
     }
 
     // 创建渲染器
-    _userModel->CreateRenderer();
+    _model->CreateRenderer();
 
     // 设置纹理
     [self setupTextures];
 }
 
 - (void)setupModelWithError:(NSError **)error {
-    if (_userModel == nullptr || self.setting.modelSetting == nullptr) {
+    if (_model == nullptr || self.setting.modelSetting == nullptr) {
         return;
     }
 
-    _userModel->_updating = true;
-    _userModel->_initialized = false;
+    _model->SetUpdating(true);
+    _model->SetInitialized(false);
 
     csmByte* buffer;
     csmSizeInt size;
 
     // Cubism模型
     if (strcmp(self.setting.modelSetting->GetModelFileName(), "") != 0) {
-        _setting.homeDir.UTF8String
         csmString path = self.setting.modelSetting->GetModelFileName();
         path = csmString(_modelHomeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadModel(buffer, size);
+        _model->LoadModel(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -158,14 +203,14 @@
             path = csmString(_modelHomeDir.UTF8String) + path;
 
             buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-            ACubismMotion* motion = _userModel->LoadExpression(buffer, size, name.GetRawString());
+            ACubismMotion* motion = _model->LoadExpression(buffer, size, name.GetRawString());
 
             if (motion) {
-                if (_internalExpressions[name] != NULL) {
-                    ACubismMotion::Delete(_internalExpressions[name]);
-                    _internalExpressions[name] = NULL;
+                if (_expressions[name] != NULL) {
+                    ACubismMotion::Delete(_expressions[name]);
+                    _expressions[name] = NULL;
                 }
-                _internalExpressions[name] = motion;
+                _expressions[name] = motion;
             }
 
             PlatformOption::ReleaseBytes(buffer);
@@ -178,7 +223,7 @@
         path = csmString(_modelHomeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadPhysics(buffer, size);
+        _model->LoadPhysics(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -188,18 +233,19 @@
         path = csmString(_modelHomeDir.UTF8String) + path;
 
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadPose(buffer, size);
+        _model->LoadPose(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
     // 眨眼
     if (self.setting.modelSetting->GetEyeBlinkParameterCount() > 0) {
-        _userModel->_eyeBlink = CubismEyeBlink::Create(self.setting.modelSetting);
+        // TODO
+//        _model->_eyeBlink = CubismEyeBlink::Create(self.setting.modelSetting);
     }
 
     // 呼吸
     {
-        _userModel->_breath = CubismBreath::Create();
+        _model->_breath = CubismBreath::Create();
 
         csmVector<CubismBreath::BreathParameterData> breathParameters;
 
@@ -209,7 +255,7 @@
         breathParameters.PushBack(CubismBreath::BreathParameterData(_bodyAngleX, 0.0f, 4.0f, 15.5345f, 0.5f));
         breathParameters.PushBack(CubismBreath::BreathParameterData(CubismFramework::GetIdManager()->GetId(ParamBreath), 0.5f, 0.5f, 3.2345f, 0.5f));
 
-        _userModel->_breath->SetParameters(breathParameters);
+        _model->_breath->SetParameters(breathParameters);
     }
 
     // 用户数据
@@ -217,7 +263,7 @@
         csmString path = self.setting.modelSetting->GetUserDataFile();
         path = csmString(_modelHomeDir.UTF8String) + path;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadUserData(buffer, size);
+        _model->LoadUserData(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 
@@ -240,9 +286,9 @@
     // 布局
     csmMap<csmString, csmFloat32> layout;
     self.setting.modelSetting->GetLayoutMap(layout);
-    _userModel->_modelMatrix->SetupFromLayout(layout);
+    _model->_modelMatrix->SetupFromLayout(layout);
 
-    _userModel->_model->SaveParameters();
+    _model->_model->SaveParameters();
 
     // 预加载动作
     for (csmInt32 i = 0; i < self.setting.modelSetting->GetMotionGroupCount(); i++) {
@@ -250,16 +296,16 @@
         [self preloadMotionGroup:group];
     }
 
-    _userModel->_motionManager->StopAllMotions();
+    _model->_motionManager->StopAllMotions();
 
-    _userModel->_updating = false;
-    _userModel->_initialized = true;
+    _model->_updating = false;
+    _model->_initialized = true;
 }
 
 #pragma mark - Texture Management
 
 - (void)setupTextures {
-    auto renderer = _userModel->GetRenderer<Rendering::CubismRenderer_Metal>();
+    auto renderer = _model->GetRenderer<Rendering::CubismRenderer_Metal>();
     if (!renderer) {
         return;
     }
@@ -309,15 +355,15 @@
         csmByte* buffer;
         csmSizeInt size;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        CubismMotion* tmpMotion = static_cast<CubismMotion*>(_userModel->LoadMotion(buffer, size, name.GetRawString(), NULL, NULL, self.setting.modelSetting, group, i));
+        CubismMotion* tmpMotion = static_cast<CubismMotion*>(_model->LoadMotion(buffer, size, name.GetRawString(), NULL, NULL, self.setting.modelSetting, group, i));
 
         if (tmpMotion) {
             tmpMotion->SetEffectIds(_eyeBlinkIds, _lipSyncIds);
 
-            if (_internalMotions[name] != NULL) {
-                ACubismMotion::Delete(_internalMotions[name]);
+            if (_motions[name] != NULL) {
+                ACubismMotion::Delete(_motions[name]);
             }
-            _internalMotions[name] = tmpMotion;
+            _motions[name] = tmpMotion;
         }
 
         PlatformOption::ReleaseBytes(buffer);
@@ -337,121 +383,121 @@
 }
 
 - (void)releaseMotions {
-    for (csmMap<csmString, ACubismMotion*>::const_iterator iter = _internalMotions.Begin(); iter != _internalMotions.End(); ++iter) {
+    for (csmMap<csmString, ACubismMotion*>::const_iterator iter = _motions.Begin(); iter != _motions.End(); ++iter) {
         ACubismMotion::Delete(iter->Second);
     }
-    _internalMotions.Clear();
+    _motions.Clear();
 }
 
 - (void)releaseExpressions {
-    for (csmMap<csmString, ACubismMotion*>::const_iterator iter = _internalExpressions.Begin(); iter != _internalExpressions.End(); ++iter) {
+    for (csmMap<csmString, ACubismMotion*>::const_iterator iter = _expressions.Begin(); iter != _expressions.End(); ++iter) {
         ACubismMotion::Delete(iter->Second);
     }
-    _internalExpressions.Clear();
+    _expressions.Clear();
 }
 
 #pragma mark - Public Interface
 
 - (void)reloadRenderer {
-    if (_userModel) {
-        _userModel->DeleteRenderer();
-        _userModel->CreateRenderer();
+    if (_model) {
+        _model->DeleteRenderer();
+        _model->CreateRenderer();
         [self setupTextures];
     }
 }
 
 - (void)update {
-    if (_userModel == nullptr) {
+    if (_model == nullptr) {
         return;
     }
 
     const csmFloat32 deltaTimeSeconds = 0.016f; // 假设60FPS
     _userTimeSeconds += deltaTimeSeconds;
 
-    _userModel->_dragManager->Update(deltaTimeSeconds);
-    _userModel->_dragX = _internalDragX;
-    _userModel->_dragY = _internalDragY;
+    _model->_dragManager->Update(deltaTimeSeconds);
+    _model->_dragX = _internalDragX;
+    _model->_dragY = _internalDragY;
 
     // 通过动作更新参数的有无
     csmBool motionUpdated = false;
 
     //-----------------------------------------------------------------
-    _userModel->_model->LoadParameters(); // 加载上次保存的状态
-    if (_userModel->_motionManager->IsFinished()) {
+    _model->_model->LoadParameters(); // 加载上次保存的状态
+    if (_model->_motionManager->IsFinished()) {
         // 若没有动作播放，则从待机动作中随机播放一个
         [self startRandomMotionWithGroup:@"idle" priority:1 finishedHandler:nil beganHandler:nil];
     } else {
-        motionUpdated = _userModel->_motionManager->UpdateMotion(_userModel->_model, deltaTimeSeconds); // 更新动作
+        motionUpdated = _model->_motionManager->UpdateMotion(_model->_model, deltaTimeSeconds); // 更新动作
     }
-    _userModel->_model->SaveParameters(); // 保存状态
+    _model->_model->SaveParameters(); // 保存状态
     //-----------------------------------------------------------------
 
     // 不透明度
-    _internalOpacity = _userModel->_model->GetModelOpacity();
+    _internalOpacity = _model->_model->GetModelOpacity();
 
     // 眨眼
     if (!motionUpdated) {
-        if (_userModel->_eyeBlink != NULL) {
+        if (_model->_eyeBlink != NULL) {
             // 主动作未更新时
-            _userModel->_eyeBlink->UpdateParameters(_userModel->_model, deltaTimeSeconds); // 眨眼
+            _model->_eyeBlink->UpdateParameters(_model->_model, deltaTimeSeconds); // 眨眼
         }
     }
 
-    if (_userModel->_expressionManager != NULL) {
-        _userModel->_expressionManager->UpdateMotion(_userModel->_model, deltaTimeSeconds); // 通过表情更新参数（相对变化）
+    if (_model->_expressionManager != NULL) {
+        _model->_expressionManager->UpdateMotion(_model->_model, deltaTimeSeconds); // 通过表情更新参数（相对变化）
     }
 
     // 拖拽变化
     // 通过拖拽调整脸部朝向
-    _userModel->_model->AddParameterValue(_angleX, _internalDragX * 30); // 添加-30到30的值
-    _userModel->_model->AddParameterValue(_angleY, _internalDragY * 30);
-    _userModel->_model->AddParameterValue(_angleZ, _internalDragX * _internalDragY * -30);
+    _model->_model->AddParameterValue(_angleX, _internalDragX * 30); // 添加-30到30的值
+    _model->_model->AddParameterValue(_angleY, _internalDragY * 30);
+    _model->_model->AddParameterValue(_angleZ, _internalDragX * _internalDragY * -30);
 
     // 通过拖拽调整身体朝向
-    _userModel->_model->AddParameterValue(_bodyAngleX, _internalDragX * 10); // 添加-10到10的值
+    _model->_model->AddParameterValue(_bodyAngleX, _internalDragX * 10); // 添加-10到10的值
 
     // 通过拖拽调整眼睛朝向
-    _userModel->_model->AddParameterValue(_eyeBallX, _internalDragX); // 添加-1到1的值
-    _userModel->_model->AddParameterValue(_eyeBallY, _internalDragY);
+    _model->_model->AddParameterValue(_eyeBallX, _internalDragX); // 添加-1到1的值
+    _model->_model->AddParameterValue(_eyeBallY, _internalDragY);
 
     // 呼吸等
-    if (_userModel->_breath != NULL) {
-        _userModel->_breath->UpdateParameters(_userModel->_model, deltaTimeSeconds);
+    if (_model->_breath != NULL) {
+        _model->_breath->UpdateParameters(_model->_model, deltaTimeSeconds);
     }
 
     // 物理运算设置
-    if (_userModel->_physics != NULL) {
-        _userModel->_physics->Evaluate(_userModel->_model, deltaTimeSeconds);
+    if (_model->_physics != NULL) {
+        _model->_physics->Evaluate(_model->_model, deltaTimeSeconds);
     }
 
     // 唇形同步设置
-    if (_userModel->_lipSync) {
+    if (_model->_lipSync) {
         csmFloat32 value = 0; // 若实时唇形同步，从系统获取音量并输入0~1范围的值
 
         for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i) {
-            _userModel->_model->AddParameterValue(_lipSyncIds[i], value, 0.8f);
+            _model->_model->AddParameterValue(_lipSyncIds[i], value, 0.8f);
         }
     }
 
     // 姿势设置
-    if (_userModel->_pose != NULL) {
-        _userModel->_pose->UpdateParameters(_userModel->_model, deltaTimeSeconds);
+    if (_model->_pose != NULL) {
+        _model->_pose->UpdateParameters(_model->_model, deltaTimeSeconds);
     }
 
-    _userModel->_model->Update();
+    _model->_model->Update();
 }
 
 - (void)drawWithMatrix:(float[16])matrix {
-    if (_userModel == nullptr) {
+    if (_model == nullptr) {
         return;
     }
 
     CubismMatrix44 cubismMatrix;
     cubismMatrix.SetMatrix(matrix);
 
-    cubismMatrix.MultiplyByMatrix(*_userModel->_modelMatrix);
+    cubismMatrix.MultiplyByMatrix(*_model->_modelMatrix);
 
-    auto renderer = _userModel->GetRenderer<Rendering::CubismRenderer_Metal>();
+    auto renderer = _model->GetRenderer<Rendering::CubismRenderer_Metal>();
     if (renderer) {
         renderer->SetMvpMatrix(&cubismMatrix);
         renderer->DrawModel();
@@ -463,13 +509,13 @@
                          priority:(NSInteger)priority
                   finishedHandler:(Live2DCubismMotionFinishedCallback)finishedHandler
                      beganHandler:(Live2DCubismMotionBeganCallback)beganHandler {
-    if (_userModel == nullptr) {
+    if (_model == nullptr) {
         return -1;
     }
 
     if (priority == 1) {
-        _userModel->_motionManager->SetReservePriority(priority);
-    } else if (!_userModel->_motionManager->ReserveMotion(priority)) {
+        _model->_motionManager->SetReservePriority(priority);
+    } else if (!_model->_motionManager->ReserveMotion(priority)) {
         return -1;
     }
 
@@ -477,7 +523,7 @@
 
     // 例如 idle_0
     csmString name = Utils::CubismString::GetFormatedString("%s_%d", [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index);
-    CubismMotion* motion = static_cast<CubismMotion*>(_internalMotions[name.GetRawString()]);
+    CubismMotion* motion = static_cast<CubismMotion*>(_motions[name.GetRawString()]);
     csmBool autoDelete = false;
 
     if (motion == NULL) {
@@ -487,7 +533,7 @@
         csmByte* buffer;
         csmSizeInt size;
         buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        motion = static_cast<CubismMotion*>(_userModel->LoadMotion(buffer, size, NULL, NULL, NULL, self.setting.modelSetting, [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index));
+        motion = static_cast<CubismMotion*>(_model->LoadMotion(buffer, size, NULL, NULL, NULL, self.setting.modelSetting, [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index));
 
         if (motion) {
             motion->SetEffectIds(_eyeBlinkIds, _lipSyncIds);
@@ -507,7 +553,7 @@
 
     // TODO: 处理声音文件
 
-    return (NSInteger)_userModel->_motionManager->StartMotionPriority(motion, autoDelete, priority);
+    return (NSInteger)_model->_motionManager->StartMotionPriority(motion, autoDelete, priority);
 }
 
 - (NSInteger)startRandomMotionWithGroup:(NSString *)group
@@ -524,21 +570,21 @@
 }
 
 - (void)setExpression:(NSString *)expressionID {
-    ACubismMotion* motion = _internalExpressions[[expressionID cStringUsingEncoding:NSUTF8StringEncoding]];
+    ACubismMotion* motion = _expressions[[expressionID cStringUsingEncoding:NSUTF8StringEncoding]];
     if (motion != NULL) {
-        _userModel->_expressionManager->StartMotion(motion, false);
+        _model->_expressionManager->StartMotion(motion, false);
     }
 }
 
 - (void)setRandomExpression {
-    if (_internalExpressions.GetSize() == 0) {
+    if (_expressions.GetSize() == 0) {
         return;
     }
 
-    csmInt32 no = rand() % _internalExpressions.GetSize();
+    csmInt32 no = rand() % _expressions.GetSize();
     csmMap<csmString, ACubismMotion*>::const_iterator map_ite;
     csmInt32 i = 0;
-    for (map_ite = _internalExpressions.Begin(); map_ite != _internalExpressions.End(); map_ite++) {
+    for (map_ite = _expressions.Begin(); map_ite != _expressions.End(); map_ite++) {
         if (i == no) {
             csmString name = (*map_ite).First;
             [self setExpression:[NSString stringWithUTF8String:name.GetRawString()]];
@@ -557,14 +603,10 @@
     for (csmInt32 i = 0; i < count; i++) {
         if (strcmp(self.setting.modelSetting->GetHitAreaName(i), [hitAreaName cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
             const CubismIdHandle drawID = self.setting.modelSetting->GetHitAreaId(i);
-            return _userModel->IsHit(drawID, (csmFloat32)x, (csmFloat32)y);
+            return _model->IsHit(drawID, (csmFloat32)x, (csmFloat32)y);
         }
     }
     return false; // 若不存在则返回false
-}
-
-- (void *)renderBuffer {
-    return &_renderBuffer;
 }
 
 - (BOOL)hasMocConsistencyFromFile:(NSString *)mocFileName {
@@ -610,7 +652,7 @@
 }
 
 - (void *)modelMatrix {
-    return _userModel ? _userModel->_modelMatrix : nullptr;
+    return _model ? _model->_modelMatrix : nullptr;
 }
 
 @end

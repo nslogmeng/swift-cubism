@@ -5,6 +5,8 @@
 //  Created by Meng on 2025/8/30.
 //
 
+#import "Live2DUserModel.h"
+#import "Live2DCubismUserModel.h"
 #import <Foundation/Foundation.h>
 #import <ICubismModelSetting.hpp>
 #import <Type/csmRectF.hpp>
@@ -25,7 +27,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
 @interface Live2DUserModel(Internal)
 
-@property (nonatomic, assign) CubismUserModel *userModel;
+@property (nonatomic, assign) Live2D::Cubism::Live2DCubismUserModel *model;
 
 /// 模型根目录
 @property (nonatomic, copy) NSString *modelHomeDir;
@@ -54,9 +56,9 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 @property (nonatomic, assign) Rendering::CubismOffscreenSurface_Metal renderBuffer;
 
 /// 内部动作列表 (C++ map)
-@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> internalMotions;
+@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> motions;
 /// 内部表情列表 (C++ map)
-@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> internalExpressions;
+@property (nonatomic, assign) Csm::csmMap<Csm::csmString, Csm::ACubismMotion*> expressions;
 
 /// 拖拽位置 (内部使用)
 @property (nonatomic) CGFloat internalDragX;

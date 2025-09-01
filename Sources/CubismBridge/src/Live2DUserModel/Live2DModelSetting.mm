@@ -25,12 +25,14 @@ using namespace Live2D::Cubism::Framework;
 
 @implementation Live2DModelSetting
 
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir fileName:(NSString *)fileName error:(NSError **)error {
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
+                                fileName:(NSString *)fileName
+                                   error:(NSError **)error {
     self = [super init];
     if (self) {
-        self.homeDir = homeDir;
-        self.fileName = fileName;
-        self.modelSetting = [self buildModelSettingWithError:error];
+        _homeDir = homeDir;
+        _fileName = fileName;
+        _modelSetting = [self buildModelSettingWithError:error];
 
         if ((error && *error) || (_modelSetting == NULL)) {
             return nil;
