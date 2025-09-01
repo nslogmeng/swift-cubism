@@ -31,9 +31,7 @@ typedef void (^Live2DCubismMotionBeganCallback)(NSString *motionGroup, NSInteger
 @property (nonatomic, readonly) void *modelMatrix;
 
 - (instancetype)init NS_UNAVAILABLE;
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
-                                fileName:(NSString *)fileName
-                                   error:(NSError **)error NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir error:(NSError **)error NS_DESIGNATED_INITIALIZER;
 
 /// 重新构建渲染器
 - (void)reloadRenderer;

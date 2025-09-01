@@ -13,12 +13,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 /// 模型根目录
 @property (nonatomic, copy, readonly) NSString *homeDir;
-/// 模型配置文件名
-@property (nonatomic, copy, readonly) NSString *fileName;
 
 - (instancetype)init NS_UNAVAILABLE;
 - (nullable instancetype)initWithHomeDir:(NSString *)homeDir
-                                fileName:(NSString *)fileName
                                    error:(NSError **)error NS_DESIGNATED_INITIALIZER;
 
 @end

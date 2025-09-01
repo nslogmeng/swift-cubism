@@ -82,9 +82,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
 #pragma mark - Initialization
 
-- (nullable instancetype)initWithHomeDir:(NSString *)homeDir
-                                fileName:(NSString *)fileName
-                                   error:(NSError **)error {
+- (nullable instancetype)initWithHomeDir:(NSString *)homeDir error:(NSError **)error {
     self = [super init];
     if (self) {
         _userTimeSeconds = 0.0f;
@@ -104,7 +102,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         _eyeBallY = CubismFramework::GetIdManager()->GetId(ParamEyeBallY);
 
         // 初始化设置
-        _setting = [[Live2DModelSetting alloc] initWithHomeDir:homeDir fileName:fileName error:error];
+        _setting = [[Live2DModelSetting alloc] initWithHomeDir:homeDir error:error];
         if ((error && *error) || !_setting) {
             [self cleanup];
             return nil;
