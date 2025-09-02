@@ -16,20 +16,20 @@ typedef NS_ENUM(NSInteger, CubismErrorCode) {
     CubismErrorCodeUnknown = 0,
 
     /// 模型根目录找不到
-    CubismErrorCodeModelHomeDirectoryNotFound = 1,
+    CubismErrorCodeModelHomeDirectoryNotFound = 100,
     /// 模型根路径不是 directory
-    CubismErrorCodeModelHomeIsNotDirectory = 2,
-
+    CubismErrorCodeModelHomeIsNotDirectory = 101,
     /// 模型设置文件找不到
-    CubismErrorCodeModelConfigFileNotFound = 3,
+    CubismErrorCodeModelConfigFileNotFound = 102,
     /// 模型设置文件 JSON 不合法
-    CubismErrorCodeModelConfigJSONInvalid = 4,
-
+    CubismErrorCodeModelConfigJSONInvalid = 103,
     /// 模型文件找不到
-    CubismErrorCodeModelFileNotFound = 5,
+    CubismErrorCodeModelFileNotFound = 104,
     /// 没有配置或无合法的纹理文件
-    CubismErrorCodeNoValidTextureFile = 6,
+    CubismErrorCodeNoValidTextureFile = 105,
 
+    /// 加载 Cubism 模型文件失败
+    CubismErrorCodeLoadCubismModelFailed = 201,
 };
 
 @interface PlatformError : NSObject

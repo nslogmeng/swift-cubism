@@ -37,8 +37,6 @@ using namespace Live2D::Cubism::Framework;
 /// UserData 文件路径 (.userdata3.json)
 @property (nullable, nonatomic, copy, readonly) NSString *userDataFilePath;
 
-- (csmByte *)loadFileWithFilePath:(NSString *)filePath;
-
 @end
 
 NS_ASSUME_NONNULL_END

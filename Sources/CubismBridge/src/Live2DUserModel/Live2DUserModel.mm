@@ -12,6 +12,7 @@
 #import "Motion/Live2DCubismMotion+Internal.h"
 #import "Motion/Live2DCubismMotion.h"
 #import "Platform/PlatformConfig.h"
+#import "Platform/PlatformError.h"
 #import "Platform/PlatformOption.h"
 #import <CubismDefaultParameterId.hpp>
 #import <CubismModelSettingJson.hpp>
@@ -19,13 +20,13 @@
 #import <Effect/CubismEyeBlink.hpp>
 #import <Effect/CubismPose.hpp>
 #import <Id/CubismIdManager.hpp>
+#import <Math/CubismMatrix44.hpp>
 #import <Motion/CubismMotion.hpp>
 #import <Motion/CubismMotionQueueEntry.hpp>
 #import <Physics/CubismPhysics.hpp>
 #import <Rendering/Metal/CubismRenderer_Metal.hpp>
 #import <Type/csmString.hpp>
 #import <Utils/CubismString.hpp>
-#import <Math/CubismMatrix44.hpp>
 
 using namespace Live2D::Cubism::Framework;
 using namespace Live2D::Cubism::Framework::DefaultParameterId;
@@ -103,7 +104,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
         // 初始化设置
         _setting = [[Live2DModelSetting alloc] initWithHomeDir:homeDir error:error];
-        if ((error && *error) || !_setting) {
+        if (!_setting || (error && *error)) {
             [self cleanup];
             return nil;
         }
@@ -149,13 +150,6 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 #pragma mark - Model Loading
 
 - (void)loadAssetsWithError:(NSError **)error {
-    if (_userModel == nullptr) {
-        if (error) {
-            *error = [NSError errorWithDomain:@"Live2DCubism" code:-1 userInfo:@{NSLocalizedDescriptionKey: @"UserModel is not initialized"}];
-        }
-        return;
-    }
-
     // 设置模型设置
     [self setupModelWithError:error];
     if (error && *error) {
@@ -169,131 +163,132 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     [self setupTextures];
 }
 
-- (void)setupModelWithError:(NSError **)error {
-    if (_userModel == nullptr || self.setting.modelSetting == nullptr) {
-        return;
+// 加载 Cubism 模型
+- (BOOL)loadCubismModelWithError:(NSError **)error {
+    csmByte* buffer;
+    csmSizeInt size;
+
+    csmString cPath = [_setting.modelFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+    buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
+    _userModel->LoadModel(buffer, size);
+    PlatformOption::ReleaseBytes(buffer);
+
+    if (_userModel->GetMoc() == NULL || _userModel->GetModel() == NULL) {
+        if (error) {
+            *error = [PlatformError errorWithCode:CubismErrorCodeLoadCubismModelFailed];
+        }
+        return NO;
     }
 
+    return YES;
+}
+
+- (void)setupModelWithError:(NSError **)error {
     _userModel->SetUpdating(true);
     _userModel->SetInitialized(false);
 
     csmByte* buffer;
     csmSizeInt size;
 
-    // Cubism模型
-    if (strcmp(self.setting.modelSetting->GetModelFileName(), "") != 0) {
-        csmString path = self.setting.modelSetting->GetModelFileName();
-        path = csmString(_setting.homeDir.UTF8String) + path;
-
-        buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadModel(buffer, size);
-        PlatformOption::ReleaseBytes(buffer);
+    // 加载 Cubism 模型
+    BOOL loadModelResult = [self loadCubismModelWithError:error];
+    if (!loadModelResult || (error && *error)) {
+        return;
     }
 
-    // 表情
-    if (self.setting.modelSetting->GetExpressionCount() > 0) {
-        const csmInt32 count = self.setting.modelSetting->GetExpressionCount();
-        for (csmInt32 i = 0; i < count; i++) {
-            csmString name = self.setting.modelSetting->GetExpressionName(i);
-            csmString path = self.setting.modelSetting->GetExpressionFileName(i);
-            path = csmString(_setting.homeDir.UTF8String) + path;
-
-            buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-            ACubismMotion* motion = _userModel->LoadExpression(buffer, size, name.GetRawString());
-
-            if (motion) {
-                if (_expressions[name] != NULL) {
-                    ACubismMotion::Delete(_expressions[name]);
-                    _expressions[name] = NULL;
-                }
-                _expressions[name] = motion;
-            }
-
-            PlatformOption::ReleaseBytes(buffer);
-        }
-    }
-
-    // 物理
-    if (strcmp(self.setting.modelSetting->GetPhysicsFileName(), "") != 0) {
-        csmString path = self.setting.modelSetting->GetPhysicsFileName();
-        path = csmString(_setting.homeDir.UTF8String) + path;
-
-        buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadPhysics(buffer, size);
-        PlatformOption::ReleaseBytes(buffer);
-    }
-
-    // 姿势
-    if (strcmp(self.setting.modelSetting->GetPoseFileName(), "") != 0) {
-        csmString path = self.setting.modelSetting->GetPoseFileName();
-        path = csmString(_setting.homeDir.UTF8String) + path;
-
-        buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadPose(buffer, size);
-        PlatformOption::ReleaseBytes(buffer);
-    }
-
-    // 眨眼
-    if (self.setting.modelSetting->GetEyeBlinkParameterCount() > 0) {
-        // TODO
-//        _model->_eyeBlink = CubismEyeBlink::Create(self.setting.modelSetting);
-    }
-
-    // 呼吸
-    {
-        _userModel->SetBreath(CubismBreath::Create());
-
-        csmVector<CubismBreath::BreathParameterData> breathParameters;
-
-        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleX, 0.0f, 15.0f, 6.5345f, 0.5f));
-        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleY, 0.0f, 8.0f, 3.5345f, 0.5f));
-        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleZ, 0.0f, 10.0f, 5.5345f, 0.5f));
-        breathParameters.PushBack(CubismBreath::BreathParameterData(_bodyAngleX, 0.0f, 4.0f, 15.5345f, 0.5f));
-        breathParameters.PushBack(CubismBreath::BreathParameterData(CubismFramework::GetIdManager()->GetId(ParamBreath), 0.5f, 0.5f, 3.2345f, 0.5f));
-
-        _userModel->GetBreath()->SetParameters(breathParameters);
-    }
-
-    // 用户数据
-    if (strcmp(self.setting.modelSetting->GetUserDataFile(), "") != 0) {
-        csmString path = self.setting.modelSetting->GetUserDataFile();
-        path = csmString(_setting.homeDir.UTF8String) + path;
-        buffer = PlatformOption::LoadFileAsBytes(path.GetRawString(), &size);
-        _userModel->LoadUserData(buffer, size);
-        PlatformOption::ReleaseBytes(buffer);
-    }
-
-    // EyeBlinkIds
-    {
-        csmInt32 eyeBlinkIdCount = self.setting.modelSetting->GetEyeBlinkParameterCount();
-        for (csmInt32 i = 0; i < eyeBlinkIdCount; ++i) {
-            _eyeBlinkIds.PushBack(_setting.modelSetting->GetEyeBlinkParameterId(i));
-        }
-    }
-
-    // LipSyncIds
-    {
-        csmInt32 lipSyncIdCount = self.setting.modelSetting->GetLipSyncParameterCount();
-        for (csmInt32 i = 0; i < lipSyncIdCount; ++i) {
-            _lipSyncIds.PushBack(_setting.modelSetting->GetLipSyncParameterId(i));
-        }
-    }
-
-    // 布局
-    csmMap<csmString, csmFloat32> layout;
-    self.setting.modelSetting->GetLayoutMap(layout);
-    _userModel->GetModelMatrix()->SetupFromLayout(layout);
-
-    _userModel->GetModel()->SaveParameters();
-
-    // 预加载动作
+    // 加载动作
     for (csmInt32 i = 0; i < self.setting.modelSetting->GetMotionGroupCount(); i++) {
         const csmChar* group = self.setting.modelSetting->GetMotionGroupName(i);
         [self preloadMotionGroup:group];
     }
 
+    // 加载表情
+    for (NSString *expressionName in _setting.expressionFilePaths.allKeys) {
+        NSString *expressionFilePath = _setting.expressionFilePaths[expressionName];
+        csmString cName = [expressionName cStringUsingEncoding:NSUTF8StringEncoding];
+        csmString cPath = [expressionFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+
+        buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
+        ACubismMotion* motion = _userModel->LoadExpression(buffer, size, cName.GetRawString());
+        if (motion) {
+            if (_expressions[cName] != NULL) {
+                ACubismMotion::Delete(_expressions[cName]);
+                _expressions[cName] = NULL;
+            }
+            _expressions[cName] = motion;
+        }
+        PlatformOption::ReleaseBytes(buffer);
+    }
+
+    // 加载物理文件
+    if (_setting.phyicsFilePath) {
+        csmString cPath = [_setting.phyicsFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+        buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
+        _userModel->LoadPhysics(buffer, size);
+        PlatformOption::ReleaseBytes(buffer);
+    }
+
+    // 加载姿势文件
+    if (_setting.poseFilePath) {
+        csmString cPath = [_setting.phyicsFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+        buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
+        _userModel->LoadPhysics(buffer, size);
+        PlatformOption::ReleaseBytes(buffer);
+    }
+
+    // 加载用户数据
+    if (_setting.userDataFilePath) {
+        csmString cPath = [_setting.userDataFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+        buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
+        _userModel->LoadUserData(buffer, size);
+        PlatformOption::ReleaseBytes(buffer);
+    }
+
+    // 设置眨眼
+    if (_setting.modelSetting->GetEyeBlinkParameterCount() > 0) {
+        _userModel->SetEyeBlink(CubismEyeBlink::Create(_setting.modelSetting));
+    }
+
+    // 设置呼吸
+    {
+        _userModel->SetBreath(CubismBreath::Create());
+
+        csmVector<CubismBreath::BreathParameterData> breathParameters;
+        const CubismId *breathId = CubismFramework::GetIdManager()->GetId(ParamBreath);
+        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleX, 0.0f, 15.0f, 6.5345f, 0.5f));
+        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleY, 0.0f, 8.0f, 3.5345f, 0.5f));
+        breathParameters.PushBack(CubismBreath::BreathParameterData(_angleZ, 0.0f, 10.0f, 5.5345f, 0.5f));
+        breathParameters.PushBack(CubismBreath::BreathParameterData(_bodyAngleX, 0.0f, 4.0f, 15.5345f, 0.5f));
+        breathParameters.PushBack(CubismBreath::BreathParameterData(breathId, 0.5f, 0.5f, 3.2345f, 0.5f));
+        _userModel->GetBreath()->SetParameters(breathParameters);
+    }
+
+    // EyeBlinkIds 眨眼 id
+    {
+        csmInt32 eyeBlinkIdCount = _setting.modelSetting->GetEyeBlinkParameterCount();
+        for (csmInt32 i = 0; i < eyeBlinkIdCount; ++i) {
+            _eyeBlinkIds.PushBack(_setting.modelSetting->GetEyeBlinkParameterId(i));
+        }
+    }
+
+    // LipSyncIds 口型同步
+    {
+        csmInt32 lipSyncIdCount = _setting.modelSetting->GetLipSyncParameterCount();
+        for (csmInt32 i = 0; i < lipSyncIdCount; ++i) {
+            _lipSyncIds.PushBack(_setting.modelSetting->GetLipSyncParameterId(i));
+        }
+    }
+
+    // 设置布局
+    csmMap<csmString, csmFloat32> layout;
+    _setting.modelSetting->GetLayoutMap(layout);
+    _userModel->GetModelMatrix()->SetupFromLayout(layout);
+    _userModel->GetModel()->SaveParameters();
+
+    // 停止播放所有动作
     _userModel->GetMotionManager()->StopAllMotions();
 
+    // 完成
     _userModel->SetUpdating(false);
     _userModel->SetInitialized(true);
 }

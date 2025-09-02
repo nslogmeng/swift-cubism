@@ -49,20 +49,37 @@ using namespace Live2D::Cubism::Framework;
     if (self) {
         _homeDir = [homeDir copy];
 
+        // 模型配置文件
         _configFilePath = [self parseConfigFilePathWithError:error];
         if (!_configFilePath || (error && *error)) {
             return nil;
         }
-
-        _modelSetting = [self buildModelSettingWithError:error];
+        // 模型配置 JSON
+        _modelSetting = [self parseModelSettingWithError:error];
         if ((_modelSetting == NULL) || (error && *error)) {
             return nil;
         }
 
-        BOOL result = [self parseFilesWithError:error];
-        if (!result || (error && *error)) {
+        // Cubism 模型文件
+        _modelFilePath = [self parseCubismModelFilePathWithError:error];
+        if (!_modelFilePath || (error && *error)) {
             return nil;
         }
+        // Texture 纹理文件
+        _textureFilePaths = [self parseTextureFilePathsWithError:error];
+        if (!_textureFilePaths || (error && *error)) {
+            return nil;
+        }
+
+        // 表情文件
+        _expressionFilePaths = [self parseExpressionFilePaths];
+        // 物理文件
+        _phyicsFilePath = [self parsePhysicsFilePath];
+        // 姿势文件
+        _poseFilePath = [self parsePoseFilePath];
+
+        // 用户数据文件
+        _userDataFilePath = [self parseUserDataFilePath];
     }
     return self;
 }
@@ -111,7 +128,8 @@ using namespace Live2D::Cubism::Framework;
     return configFilePath;
 }
 
-- (Csm::ICubismModelSetting *)buildModelSettingWithError:(NSError **)error {
+/// 模型设置 JSON 解析
+- (Csm::ICubismModelSetting *)parseModelSettingWithError:(NSError **)error {
     csmSizeInt size;
     const csmString path = [_configFilePath cStringUsingEncoding:NSUTF8StringEncoding];
 
@@ -130,70 +148,147 @@ using namespace Live2D::Cubism::Framework;
     return modelSetting;
 }
 
-- (void)dealloc {
-    delete _modelSetting;
-}
+// Cubism 模型文件（必选）
+- (nullable NSString *)parseCubismModelFilePathWithError:(NSError **)error {
+    const csmChar *cFileName = _modelSetting->GetModelFileName();
+    NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
 
-- (BOOL)parseFilesWithError:(NSError **)error {
-    // Cubism 模型
-    if (strcmp(_modelSetting->GetModelFileName(), "") != 0) {
-        const csmChar *_fileName = _modelSetting->GetModelFileName();
-        NSString *fileName = [NSString stringWithCString:_fileName encoding:NSUTF8StringEncoding];
-        _modelFilePath = [_homeDir stringByAppendingPathComponent: fileName];
-
-        // 模型文件必选
-        if (![[NSFileManager defaultManager] fileExistsAtPath:_modelFilePath]) {
-            if (error) {
-                *error = [PlatformError errorWithCode:CubismErrorCodeModelFileNotFound];
-            }
-            return NO;
+    if (fileName.length == 0) {
+        if (error) {
+            *error = [PlatformError errorWithCode:CubismErrorCodeModelFileNotFound];
+            return nil;
         }
     }
 
-    // 纹理
-    csmInt32 textureCount = _modelSetting->GetTextureCount();
-    NSMutableArray<NSString *> *tmpTextureFilePaths = [NSMutableArray array];
+    NSString *filePath = [_homeDir stringByAppendingPathComponent: fileName];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:_modelFilePath]) {
+        if (error) {
+            *error = [PlatformError errorWithCode:CubismErrorCodeModelFileNotFound];
+        }
+        return nil;
+    }
+
+    return filePath;
+}
+
+/// 纹理文件（必选）
+- (NSArray<NSString *> *)parseTextureFilePathsWithError:(NSError **)error {
+    const csmInt32 textureCount = _modelSetting->GetTextureCount();
+    NSMutableArray<NSString *> *textureFilePaths = [NSMutableArray array];
     for (csmInt32 textureNumber = 0; textureNumber < textureCount; textureNumber++) {
-        const csmChar *_fileName = _modelSetting->GetTextureFileName(textureNumber);
-        NSString *fileName = [NSString stringWithCString:_fileName encoding:NSUTF8StringEncoding];
+        const csmChar *cFileName = _modelSetting->GetTextureFileName(textureNumber);
+        NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
         NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
 
-        [tmpTextureFilePaths addObject:filePath];
+        [textureFilePaths addObject:filePath];
     }
-    if (textureCount <= 0 || tmpTextureFilePaths.count <= 0) {
+    if (textureCount <= 0 || textureFilePaths.count <= 0) {
         if (error) {
             *error = [PlatformError errorWithCode:CubismErrorCodeNoValidTextureFile];
         }
-        return NO;
+        return @[];
     }
-    _textureFilePaths = tmpTextureFilePaths;
+    return textureFilePaths;
+}
 
-    // 表情
-    _expressionFilePaths = @{};
-    if (_modelSetting->GetExpressionCount() > 0) {
-        NSMutableDictionary<NSString *, NSString *> *tmpExpressionPaths = [NSMutableDictionary dictionary];
-        const csmInt32 count = _modelSetting->GetExpressionCount();
-        for (csmInt32 i = 0; i < count; i++) {
-            const csmChar *_name = _modelSetting->GetExpressionName(i);
-            const csmChar *_fileName = _modelSetting->GetExpressionFileName(i);
-            NSString *name = [NSString stringWithCString:_name encoding:NSUTF8StringEncoding];
-            NSString *fileName = [NSString stringWithCString:_fileName encoding:NSUTF8StringEncoding];
+/// 动作文件
+- (NSDictionary<NSString *, NSString *> *)parseMotionFilePaths {
+    const csmInt32 groupCount = _modelSetting->GetMotionGroupCount();
+    if (groupCount <= 0) {
+        return @{};
+    }
+
+    NSMutableDictionary<NSString *, NSString *> *motionFilePath = [NSMutableDictionary dictionary];
+    for (csmInt32 i = 0; i < groupCount; i++) {
+        const csmChar *groupName = _modelSetting->GetMotionGroupName(i);
+        const csmInt32 motionCount = _modelSetting->GetMotionCount(groupName);
+        for (csmInt32 i = 0; i < motionCount; i++) {
+            const csmChar *cFileName = _modelSetting->GetMotionFileName(groupName, i);
+            NSString *motionName = [NSString stringWithFormat:@"%s_%d", groupName, i];
+            NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
             NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
 
-            if ([name isEqualToString:@""]) {
-                continue;
-            }
-
-            if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
-                continue;
-            }
-
-            [tmpExpressionPaths setObject:filePath forKey:name];
+            [motionFilePath setObject:filePath forKey:motionName];
         }
-        _expressionFilePaths = tmpExpressionPaths;
     }
 
-    return YES;
+    return motionFilePath;
+}
+
+/// 表情文件
+- (NSDictionary<NSString *, NSString *> *)parseExpressionFilePaths {
+    const csmInt32 count = _modelSetting->GetExpressionCount();
+    if (count <= 0) {
+        return @{};
+    }
+
+    NSMutableDictionary<NSString *, NSString *> *expressionPaths = [NSMutableDictionary dictionary];
+    for (csmInt32 i = 0; i < count; i++) {
+        const csmChar *cName = _modelSetting->GetExpressionName(i);
+        const csmChar *cFileName = _modelSetting->GetExpressionFileName(i);
+        NSString *name = [NSString stringWithCString:cName encoding:NSUTF8StringEncoding];
+        NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
+        NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
+
+        if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+            continue;
+        }
+
+        [expressionPaths setObject:filePath forKey:name];
+    }
+    return expressionPaths;
+}
+
+/// 物理文件
+- (nullable NSString *)parsePhysicsFilePath {
+    const csmChar *cFileName = _modelSetting->GetPhysicsFileName();
+    NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
+    if (fileName.length <= 0) {
+        return nil;
+    }
+
+    NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        return nil;
+    }
+
+    return filePath;
+}
+
+/// 姿势文件
+- (nullable NSString *)parsePoseFilePath {
+    const csmChar *cFileName = _modelSetting->GetPoseFileName();
+    NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
+    if (fileName.length <= 0) {
+        return nil;
+    }
+
+    NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        return nil;
+    }
+
+    return filePath;
+}
+
+/// 用户数据文件
+- (nullable NSString *)parseUserDataFilePath {
+    const csmChar *cFileName = _modelSetting->GetUserDataFile();
+    NSString *fileName = [NSString stringWithCString:cFileName encoding:NSUTF8StringEncoding];
+    if (fileName.length <= 0) {
+        return nil;
+    }
+
+    NSString *filePath = [_homeDir stringByAppendingPathComponent:fileName];
+    if (![[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        return nil;
+    }
+
+    return filePath;
+}
+
+- (void)dealloc {
+    delete _modelSetting;
 }
 
 @end
