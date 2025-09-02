@@ -6,6 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <Metal/MTLDevice.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -24,6 +25,9 @@ typedef NS_ENUM(NSInteger, CubismLogLevel) {
 
 typedef NSData * _Nullable (^LoadFileHandler)(NSString *filePath);
 typedef void (^LogHandler)(NSString *message);
+
+/// shared MTLDevice
+@property (class, nonatomic, readonly) id<MTLDevice> MTLDevice;
 
 /// 文件加载 handler
 @property (class, nonatomic, copy, nullable) LoadFileHandler loadFileHandler;

@@ -30,6 +30,8 @@ typedef NS_ENUM(NSInteger, CubismErrorCode) {
 
     /// 加载 Cubism 模型文件失败
     CubismErrorCodeLoadCubismModelFailed = 201,
+    /// 纹理加载失败
+    CubismErrorCodeLoadTextureFailed = 202,
 };
 
 @interface PlatformError : NSObject

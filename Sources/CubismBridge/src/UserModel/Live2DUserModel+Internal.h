@@ -7,6 +7,7 @@
 
 #import "Live2DUserModel.h"
 #import "Live2DCubismUserModel.h"
+#import "UserModel/Live2DTexture.h"
 #import <Foundation/Foundation.h>
 #import <ICubismModelSetting.hpp>
 #import <Type/csmRectF.hpp>
@@ -66,9 +67,6 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
 /// 模型不透明度 (内部使用)
 @property (nonatomic) CGFloat internalOpacity;
-
-/// 纹理管理器 (平台相关，需要外部注入)
-@property (nonatomic, weak, nullable) id textureManager;
 
 @end
 

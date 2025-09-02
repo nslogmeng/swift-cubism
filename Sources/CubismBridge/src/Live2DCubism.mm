@@ -5,11 +5,12 @@
 //  Created by Meng on 2025/8/26.
 //
 
-#import "Live2DCubism.h"
 #import "CubismFramework.hpp"
-#import "Platform/PlatformConfig.h"
+#import "Live2DCubism.h"
 #import "Platform/PlatformAllocator.h"
+#import "Platform/PlatformConfig.h"
 #import "Platform/PlatformOption.h"
+#import <Rendering/Metal/CubismRenderingInstanceSingleton_Metal.h>
 #import <string.h>
 
 using namespace std;
@@ -51,6 +52,10 @@ using namespace Live2D::Cubism::Framework;
 - (void)start {
     Csm::CubismFramework::StartUp(&_allocator, &_option);
     Csm::CubismFramework::Initialize();
+
+    // set framework shared MTLDevice
+    CubismRenderingInstanceSingleton_Metal *single = [CubismRenderingInstanceSingleton_Metal sharedManager];
+    [single setMTLDevice:PlatformConfig.MTLDevice];
 }
 
 - (void)stop {
