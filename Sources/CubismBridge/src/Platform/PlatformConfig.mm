@@ -12,14 +12,14 @@
 static LoadFileHandler _loadFileHandler = nil;
 static LogHandler _logHandler = nil;
 static CubismLogLevel _logLevel = CubismLogLevelInfo;
+static id<MTLDevice> _MTLDevice = MTLCreateSystemDefaultDevice();
 
 + (id<MTLDevice>)MTLDevice {
-    static id<MTLDevice> device = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        device = MTLCreateSystemDefaultDevice();
-    });
-    return device;
+    return _MTLDevice;
+}
+
++ (void)setMTLDevice:(id<MTLDevice>)MTLDevice {
+    _MTLDevice = MTLDevice;
 }
 
 + (LoadFileHandler)loadFileHandler {

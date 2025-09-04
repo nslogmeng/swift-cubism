@@ -198,7 +198,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
     csmString cPath = [_setting.modelFilePath cStringUsingEncoding:NSUTF8StringEncoding];
     buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
-    _userModel->LoadModel(buffer, size);
+    _userModel->LoadModel(buffer, size, false); // TODO
     PlatformOption::ReleaseBytes(buffer);
 
     if (_userModel->GetMoc() == NULL || _userModel->GetModel() == NULL) {
@@ -404,8 +404,8 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 }
 
 - (void)releaseMotions {
-    for (csmMap<csmString, ACubismMotion*>::const_iterator iter = _motions.Begin(); iter != _motions.End(); ++iter) {
-        ACubismMotion::Delete(iter->Second);
+    for (auto it = _motions.Begin(); it != _motions.End(); ++it) {
+        ACubismMotion::Delete(it->Second);
     }
     _motions.Clear();
 }
@@ -485,20 +485,20 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     model->AddParameterValue(_eyeBallX, _internalDragX); // 添加-1到1的值
     model->AddParameterValue(_eyeBallY, _internalDragY);
 
-    // 呼吸等
+    // 呼吸计算
     if (_userModel->GetBreath() != NULL) {
         _userModel->GetBreath()->UpdateParameters(model, deltaTimeSeconds);
     }
 
-    // 物理运算设置
+    // 物理计算
     if (_userModel->GetPhysics() != NULL) {
         _userModel->GetPhysics()->Evaluate(model, deltaTimeSeconds);
     }
 
-    // 唇形同步设置
+    // 唇形同步
     if (_userModel->GetLipSync()) {
+        // TODO
         csmFloat32 value = 0; // 若实时唇形同步，从系统获取音量并输入0~1范围的值
-
         for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i) {
             model->AddParameterValue(_lipSyncIds[i], value, 0.8f);
         }
@@ -545,7 +545,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         return -1;
     }
 
-    const csmString fileName = self.setting.modelSetting->GetMotionFileName([group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index);
+    const csmString fileName = _setting.modelSetting->GetMotionFileName([group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index);
 
     // 例如 idle_0
     csmString name = Utils::CubismString::GetFormatedString("%s_%d", [group cStringUsingEncoding:NSUTF8StringEncoding], (csmInt32)index);
@@ -585,8 +585,8 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 - (NSInteger)startRandomMotionWithGroup:(NSString *)group
                                priority:(NSInteger)priority
                         finishedHandler:(Live2DCubismMotionFinishedCallback)finishedHandler
-                          beganHandler:(Live2DCubismMotionBeganCallback)beganHandler {
-    if (self.setting.modelSetting->GetMotionCount([group cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
+                           beganHandler:(Live2DCubismMotionBeganCallback)beganHandler {
+    if (_setting.modelSetting->GetMotionCount([group cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
         return -1;
     }
 
@@ -625,9 +625,9 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     if (_internalOpacity < 1) {
         return false;
     }
-    const csmInt32 count = self.setting.modelSetting->GetHitAreasCount();
+    const csmInt32 count = _setting.modelSetting->GetHitAreasCount();
     for (csmInt32 i = 0; i < count; i++) {
-        if (strcmp(self.setting.modelSetting->GetHitAreaName(i), [hitAreaName cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
+        if (strcmp(_setting.modelSetting->GetHitAreaName(i), [hitAreaName cStringUsingEncoding:NSUTF8StringEncoding]) == 0) {
             const CubismIdHandle drawID = self.setting.modelSetting->GetHitAreaId(i);
             return _userModel->IsHit(drawID, (csmFloat32)x, (csmFloat32)y);
         }

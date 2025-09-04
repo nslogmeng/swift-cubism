@@ -6,7 +6,7 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <Metal/MTLDevice.h>
+#import <Metal/Metal.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -27,13 +27,13 @@ typedef NSData * _Nullable (^LoadFileHandler)(NSString *filePath);
 typedef void (^LogHandler)(NSString *message);
 
 /// shared MTLDevice
-@property (class, nonatomic, readonly) id<MTLDevice> MTLDevice;
+@property (class, nonatomic) id<MTLDevice> MTLDevice;
 
 /// 文件加载 handler
-@property (class, nonatomic, copy, nullable) LoadFileHandler loadFileHandler;
+@property (class, nonatomic, nullable) LoadFileHandler loadFileHandler;
 
 /// 日志 handler
-@property (class, nonatomic, copy, nullable) LogHandler logHandler;
+@property (class, nonatomic, nullable) LogHandler logHandler;
 /// 日志 loglevel
 @property (class, assign) CubismLogLevel logLevel;
 
