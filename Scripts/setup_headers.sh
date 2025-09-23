@@ -7,34 +7,48 @@ PROJECT_ROOT="$SCRIPT_DIR/.."
 SRC_DIR="$PROJECT_ROOT/Sources/CubismFramework/src"
 INCLUDE_DIR="$PROJECT_ROOT/Sources/CubismFramework/include"
 
-# 配置要生成的渲染类型
+# Default render type
 RENDER_TYPE="Metal"
 
-echo "==> 清理旧的 include 目录"
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --render)
+            RENDER_TYPE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown argument: $1"
+            echo "Usage: $0 [--render <Metal|OpenGL|DirectX>]"
+            exit 1
+            ;;
+    esac
+done
+
+echo "==> Cleaning old include directory"
 rm -rf "$INCLUDE_DIR"
 mkdir -p "$INCLUDE_DIR"
 
-echo "==> 生成头文件软链接到 include/"
+echo "==> Copying header files to include/ (Render type: $RENDER_TYPE)"
 
-# 遍历 src 下所有 .h/.hpp/.tpp 文件（支持空格和特殊字符）
 find "$SRC_DIR" -type f \( -name "*.h" -o -name "*.hpp"  -o -name "*.tpp" \) -print0 | while IFS= read -r -d '' file; do
     rel_path="${file#$SRC_DIR/}"
 
     if [[ "$rel_path" == Rendering/* ]]; then
         if [[ "$rel_path" =~ ^Rendering/[^/]+\.(h|hpp|tpp)$ || "$rel_path" =~ ^Rendering/$RENDER_TYPE/.*\.(h|hpp)$ ]]; then
-            : # 保留
+            :
         else
             continue
         fi
     fi
 
-    # 创建目标目录
+    # Create destination directory
     dest_dir="$INCLUDE_DIR/$(dirname "$rel_path")"
     mkdir -p "$dest_dir"
 
-    # 创建软链接
-    ln -sf "$file" "$dest_dir/$(basename "$file")"
-    echo "Linked $dest_dir/$(basename "$file") -> $file"
+    # Copy file (overwrite if exists)
+    cp -f "$file" "$dest_dir/"
+    echo "Copied $file -> $dest_dir/"
 done
 
-echo "==> 完成，public headers 已生成在 $INCLUDE_DIR"
+echo "==> Done, public headers are now in $INCLUDE_DIR"
