@@ -154,7 +154,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     }
 }
 
-#pragma mark - Model Load
+#pragma mark - Model Loading
 
 /// 加载模型数据
 - (BOOL)loadModelWithError:(NSError **)error {
@@ -383,7 +383,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
         }
     }
 
-    // 设置预乘 alpha（TODO）
+    // 设置预乘 alpha
     renderer->IsPremultipliedAlpha(false);
 
     return YES;
