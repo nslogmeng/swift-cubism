@@ -29,6 +29,7 @@ let package = Package(
             dependencies: [
                 .target(name: "CubismFramework")
             ],
+            publicHeadersPath: "include",
             cxxSettings: [
                 .headerSearchPath("src")
             ],
@@ -70,7 +71,7 @@ let package = Package(
                 "src/Rendering/OpenGL",
                 "src/Rendering/Vulkan",
             ],
-            publicHeadersPath: "include",
+            publicHeadersPath: "src",
             cSettings: [
                 .unsafeFlags(["-fno-objc-arc"])
             ],

@@ -1,1 +1,0 @@
-/Users/meng/Codes/GitHub/swift-cubism/Scripts/../Sources/CubismFramework/src/Rendering/Metal/CubismRenderingInstanceSingleton_Metal.h
