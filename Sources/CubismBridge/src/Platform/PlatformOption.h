@@ -5,8 +5,7 @@
 //  Created by Meng on 2025/8/24.
 //
 
-#ifndef PlatformOption_hpp
-#define PlatformOption_hpp
+#pragma once
 
 #import <string>
 #import <CubismFramework.hpp>
@@ -33,5 +32,3 @@ public:
     static void PrintLog(const Csm::csmChar* message);
     static void _PrintLog(const Csm::csmChar* format, ...);
 };
-
-#endif /* PlatformOption_hpp */

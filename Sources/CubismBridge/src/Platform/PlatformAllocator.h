@@ -5,8 +5,7 @@
 //  Created by Meng on 2025/8/24.
 //
 
-#ifndef PlatformAllocator_hpp
-#define PlatformAllocator_hpp
+#pragma once
 
 #import <CubismFramework.hpp>
 
@@ -36,4 +35,4 @@ class PlatformAllocator: public Csm::ICubismAllocator {
     void DeallocateAligned(void* alignedMemory);
 };
 
-#endif /* PlatformAllocator_hpp */
+#pragma once

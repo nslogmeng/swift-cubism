@@ -5,6 +5,8 @@
 //  Created by Meng on 2025/8/30.
 //
 
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import "Live2DModelSetting.h"
 

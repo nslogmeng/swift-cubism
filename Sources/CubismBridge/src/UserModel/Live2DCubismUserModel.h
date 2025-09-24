@@ -5,6 +5,8 @@
 //  Created by Meng on 2025/9/1.
 //
 
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import <Model/CubismUserModel.hpp>
 #import <CubismDefaultParameterId.hpp>

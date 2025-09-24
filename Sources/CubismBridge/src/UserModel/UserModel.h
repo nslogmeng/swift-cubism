@@ -5,8 +5,7 @@
 //  Created by Meng on 2025/8/25.
 //
 
-#ifndef CubismModel_h
-#define CubismModel_h
+#pragma once
 
 #import <CubismFramework.hpp>
 #import <Model/CubismUserModel.hpp>
@@ -188,6 +187,3 @@ private:
 
     Live2D::Cubism::Framework::Rendering::CubismOffscreenSurface_Metal _renderBuffer;
 };
-
-#endif /* CubismModel_h */
-

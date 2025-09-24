@@ -5,6 +5,8 @@
 //  Created by Meng on 2025/8/25.
 //
 
+#pragma once
+
 #import <Foundation/Foundation.h>
 #import <Metal/Metal.h>
 
