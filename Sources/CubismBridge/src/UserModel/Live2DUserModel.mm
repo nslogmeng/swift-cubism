@@ -113,7 +113,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
         // 加载模型数据
         BOOL loadModelResult = [self loadModelWithError:error];
-        if (loadModelResult || (error && *error)) {
+        if (!loadModelResult || (error && *error)) {
             return nil;
         }
 
@@ -283,9 +283,9 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     }
 
     if (_setting.poseFilePath) {
-        csmString cPath = [_setting.phyicsFilePath cStringUsingEncoding:NSUTF8StringEncoding];
+        csmString cPath = [_setting.poseFilePath cStringUsingEncoding:NSUTF8StringEncoding];
         buffer = PlatformOption::LoadFileAsBytes(cPath.GetRawString(), &size);
-        _userModel->LoadPhysics(buffer, size);
+        _userModel->LoadPose(buffer, size);
         PlatformOption::ReleaseBytes(buffer);
     }
 }
@@ -497,8 +497,10 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
 
     // 唇形同步
     if (_userModel->GetLipSync()) {
-        // TODO
-        csmFloat32 value = 0; // 若实时唇形同步，从系统获取音量并输入0~1范围的值
+        csmFloat32 value = 0;
+        // 这里应该实现从系统获取音量的逻辑，例如：
+        // AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+        // value = audioSession.outputVolume;
         for (csmUint32 i = 0; i < _lipSyncIds.GetSize(); ++i) {
             model->AddParameterValue(_lipSyncIds[i], value, 0.8f);
         }
@@ -520,7 +522,7 @@ using namespace Live2D::Cubism::Framework::DefaultParameterId;
     CubismMatrix44 cubismMatrix;
     cubismMatrix.SetMatrix(matrix);
 
-    // TODO: check
+    // 乘以模型矩阵，将模型变换应用到视图投影矩阵
     cubismMatrix.MultiplyByMatrix(_userModel->GetModelMatrix());
 
     auto renderer = _userModel->GetRenderer<Rendering::CubismRenderer_Metal>();
